@@ -1,20 +1,19 @@
 -- ================================================
--- AXILON HUB - Rodograu 2.0 (Mobile)
+-- AXILON HUB | Rodograu 2.0 (Mobile / Delta)
 -- ================================================
 
--- Carrega a biblioteca de interface (Orion Library)
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+-- Carrega a biblioteca de interface (Link Direto / Espelho)
+local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/jensonhirst/Orion/main/source'))()
 
 -- Cria a Janela Principal do Axilon Hub
 local Window = OrionLib:MakeWindow({
     Name = "Axilon Hub | Rodograu", 
     HidePremium = false, 
-    SaveConfig = true, 
-    ConfigFolder = "AxilonHubConfig",
+    SaveConfig = false, 
     IntroText = "Bem-vindo ao Axilon Hub!"
 })
 
--- ABA 1: Teleportes (Praia, Brasilândia, Favela)
+-- ABA 1: Teleportes
 local TabTeleportes = Window:MakeTab({
     Name = "Teleportes",
     Icon = "rbxassetid://4483345998",
@@ -25,69 +24,43 @@ TabTeleportes:AddSection({
     Name = "Locais do Mapa"
 })
 
--- Função auxiliar para teleportar o personagem
-local function Teleportar(caminho)
+local function Teleportar(cf)
     local char = game.Players.LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = caminho
+        char.HumanoidRootPart.CFrame = cf
     end
 end
 
--- Botão: Teleportar para a Praia
 TabTeleportes:AddButton({
     Name = "Teleportar para a Praia",
     Callback = function()
-        -- Procura o local da praia no jogo ou usa coordenadas aproximadas
-        local praia = workspace:FindFirstChild("Praia") or workspace:FindFirstChild("Beach")
-        if praia then
-            Teleportar(praia:GetPivot())
-        else
-            -- Coordenada de fallback caso o mapa não use o nome direto
-            Teleportar(CFrame.new(0, 15, 500))
-        end
+        Teleportar(CFrame.new(0, 15, 500))
     end    
 })
 
--- Botão: Teleportar para a Brasilândia
 TabTeleportes:AddButton({
     Name = "Teleportar para a Brasilândia",
     Callback = function()
-        local brasilandia = workspace:FindFirstChild("Brasilândia") or workspace:FindFirstChild("Brasilandia")
-        if brasilandia then
-            Teleportar(brasilandia:GetPivot())
-        else
-            Teleportar(CFrame.new(-300, 15, -200))
-        end
+        Teleportar(CFrame.new(-300, 15, -200))
     end    
 })
 
--- Botão: Teleportar para a Favela
 TabTeleportes:AddButton({
     Name = "Teleportar para a Favela",
     Callback = function()
-        local favela = workspace:FindFirstChild("Favela")
-        if favela then
-            Teleportar(favela:GetPivot())
-        else
-            Teleportar(CFrame.new(400, 30, -500))
-        end
+        Teleportar(CFrame.new(400, 30, -500))
     end    
 })
 
--- ABA 2: Voo & Fly Menu
+-- ABA 2: Voo (Fly)
 local TabFly = Window:MakeTab({
     Name = "Voo (Fly)",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
 
-TabFly:AddSection({
-    Name = "Controle de Voo"
-})
-
--- Script Universal de Fly para Celular
 TabFly:AddButton({
-    Name = "Ativar Menu de Fly (Mobile GUI)",
+    Name = "Ativar Fly Mobile",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/x2125/Mobile-Fly-GUI/main/MobileFly.lua"))()
     end    
@@ -100,13 +73,8 @@ local TabPlayer = Window:MakeTab({
     PremiumOnly = false
 })
 
-TabPlayer:AddSection({
-    Name = "Atributos do Jogador"
-})
-
--- Modificador de Velocidade
 TabPlayer:AddSlider({
-    Name = "Velocidade de Andar (Speed)",
+    Name = "Velocidade (WalkSpeed)",
     Min = 16,
     Max = 200,
     Default = 16,
@@ -120,9 +88,8 @@ TabPlayer:AddSlider({
     end    
 })
 
--- Modificador de Pulo
 TabPlayer:AddSlider({
-    Name = "Altura do Pulo (Jump)",
+    Name = "Altura do Pulo (JumpPower)",
     Min = 50,
     Max = 300,
     Default = 50,
@@ -136,7 +103,6 @@ TabPlayer:AddSlider({
     end    
 })
 
--- Pulo Infinito Toggle
 TabPlayer:AddToggle({
     Name = "Pulo Infinito",
     Default = false,
@@ -150,7 +116,7 @@ TabPlayer:AddToggle({
     end    
 })
 
--- ABA 4: Configurações Gerais
+-- ABA 4: Geral
 local TabGeral = Window:MakeTab({
     Name = "Geral",
     Icon = "rbxassetid://4483345998",
@@ -158,7 +124,7 @@ local TabGeral = Window:MakeTab({
 })
 
 TabGeral:AddButton({
-    Name = "Resetar Padrão",
+    Name = "Resetar Velocidade e Pulo",
     Callback = function()
         if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
             game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
@@ -174,5 +140,4 @@ TabGeral:AddButton({
     end    
 })
 
--- Inicializa o Axilon Hub
 OrionLib:Init()

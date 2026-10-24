@@ -1,0 +1,284 @@
+-- Script Medidor de Studs - Menu Flutuante para Delta Executor
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Variáveis
+local startPosition = nil
+local isMeasuring = false
+local isMinimized = false
+
+-- ========== GUI ==========
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "StudsMeasurerGUI"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- ========== BOTÃO FLUTUANTE (abre/fecha menu) ==========
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 50, 0, 50)
+toggleButton.Position = UDim2.new(0, 20, 0.5, -25)
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+toggleButton.Text = "📏"
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.TextSize = 22
+toggleButton.BorderSizePixel = 0
+toggleButton.Active = true
+toggleButton.Draggable = true
+toggleButton.Parent = screenGui
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(1, 0)
+toggleCorner.Parent = toggleButton
+
+local toggleStroke = Instance.new("UIStroke")
+toggleStroke.Color = Color3.fromRGB(255, 255, 255)
+toggleStroke.Thickness = 1
+toggleStroke.Transparency = 0.5
+toggleStroke.Parent = toggleButton
+
+-- ========== FRAME PRINCIPAL ==========
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 220, 0, 140)
+mainFrame.Position = UDim2.new(0, 80, 0.5, -70)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+mainFrame.BackgroundTransparency = 0.1
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Visible = true
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 10)
+mainCorner.Parent = mainFrame
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(0, 120, 255)
+mainStroke.Thickness = 1.5
+mainStroke.Transparency = 0.3
+mainStroke.Parent = mainFrame
+
+-- Barra de título (arrastável)
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 30)
+titleBar.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+titleBar.BackgroundTransparency = 0.3
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 10)
+titleCorner.Parent = titleBar
+
+-- Corrige cantos inferiores da titlebar
+local titleFix = Instance.new("Frame")
+titleFix.Size = UDim2.new(1, 0, 0.5, 0)
+titleFix.Position = UDim2.new(0, 0, 0.5, 0)
+titleFix.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+titleFix.BackgroundTransparency = 0.3
+titleFix.BorderSizePixel = 0
+titleFix.Parent = titleBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -60, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "📏 Medidor de Studs"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 13
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
+
+-- Botão minimizar
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 25, 0, 25)
+minimizeBtn.Position = UDim2.new(1, -55, 0, 2)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
+minimizeBtn.Text = "−"
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.TextSize = 16
+minimizeBtn.BorderSizePixel = 0
+minimizeBtn.Parent = titleBar
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 6)
+minCorner.Parent = minimizeBtn
+
+-- Botão fechar
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 25, 0, 25)
+closeBtn.Position = UDim2.new(1, -27, 0, 2)
+closeBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 14
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeBtn
+
+-- ========== DISPLAY DE DISTÂNCIA ==========
+local distanceFrame = Instance.new("Frame")
+distanceFrame.Size = UDim2.new(1, -20, 0, 55)
+distanceFrame.Position = UDim2.new(0, 10, 0, 38)
+distanceFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+distanceFrame.BorderSizePixel = 0
+distanceFrame.Parent = mainFrame
+
+local distCorner = Instance.new("UICorner")
+distCorner.CornerRadius = UDim.new(0, 8)
+distCorner.Parent = distanceFrame
+
+local distanceLabel = Instance.new("TextLabel")
+distanceLabel.Size = UDim2.new(1, 0, 1, 0)
+distanceLabel.BackgroundTransparency = 1
+distanceLabel.Text = "0.0 studs"
+distanceLabel.TextColor3 = Color3.fromRGB(0, 255, 127)
+distanceLabel.Font = Enum.Font.GothamBold
+distanceLabel.TextSize = 26
+distanceLabel.Parent = distanceFrame
+
+-- Status
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -20, 0, 15)
+statusLabel.Position = UDim2.new(0, 10, 0, 95)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "Aguardando..."
+statusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 11
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = mainFrame
+
+-- ========== BOTÃO DE AÇÃO ==========
+local actionButton = Instance.new("TextButton")
+actionButton.Size = UDim2.new(1, -20, 0, 32)
+actionButton.Position = UDim2.new(0, 10, 1, -42)
+actionButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+actionButton.Text = "Marcar Posição"
+actionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+actionButton.Font = Enum.Font.GothamBold
+actionButton.TextSize = 13
+actionButton.BorderSizePixel = 0
+actionButton.Parent = mainFrame
+
+local actionCorner = Instance.new("UICorner")
+actionCorner.CornerRadius = UDim.new(0, 6)
+actionCorner.Parent = actionButton
+
+-- ========== FUNÇÕES ==========
+local function updateDistance()
+    if not startPosition or not humanoidRootPart then return end
+    local distance = (humanoidRootPart.Position - startPosition).Magnitude
+    distanceLabel.Text = string.format("%.1f studs", distance)
+end
+
+local function resetMeasurement()
+    startPosition = nil
+    isMeasuring = false
+    actionButton.Text = "Marcar Posição"
+    actionButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+    distanceLabel.Text = "0.0 studs"
+    statusLabel.Text = "Aguardando..."
+end
+
+actionButton.MouseButton1Click:Connect(function()
+    if not isMeasuring then
+        if humanoidRootPart then
+            startPosition = humanoidRootPart.Position
+            isMeasuring = true
+            actionButton.Text = "Resetar"
+            actionButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+            distanceLabel.Text = "0.0 studs"
+            statusLabel.Text = "Medindo... ande para ver a distância"
+        end
+    else
+        resetMeasurement()
+    end
+end)
+
+-- ========== MINIMIZAR / EXPANDIR ==========
+minimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        -- Esconde conteúdo, deixa só a titlebar
+        distanceFrame.Visible = false
+        statusLabel.Visible = false
+        actionButton.Visible = false
+        mainFrame:TweenSize(UDim2.new(0, 220, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+        minimizeBtn.Text = "+"
+    else
+        mainFrame:TweenSize(UDim2.new(0, 220, 0, 140), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+        task.wait(0.2)
+        distanceFrame.Visible = true
+        statusLabel.Visible = true
+        actionButton.Visible = true
+        minimizeBtn.Text = "−"
+    end
+end)
+
+-- ========== FECHAR ==========
+closeBtn.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+end)
+
+-- ========== TOGGLE (abre/fecha menu) ==========
+toggleButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = not mainFrame.Visible
+end)
+
+-- ========== ARRASTAR A JANELA PELA TITLEBAR ==========
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- ========== LOOP DE ATUALIZAÇÃO ==========
+RunService.RenderStepped:Connect(function()
+    if isMeasuring then
+        updateDistance()
+    end
+end)
+
+-- ========== RESPAWN ==========
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    resetMeasurement()
+end)
